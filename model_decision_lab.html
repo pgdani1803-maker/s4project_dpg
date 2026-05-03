@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Decision Lab · Alto Engagement</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0f0e;
+    --surface: #131918;
+    --surface2: #1a2120;
+    --border: #243030;
+    --accent: #30e8b0;
+    --accent2: #5ce8f7;
+    --warn: #f7b84b;
+    --red: #f76b6b;
+    --purple: #b06bf7;
+    --text: #dff2ee;
+    --muted: #5a7570;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0e1a18 0%, #131918 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px 24px;
+  }
+  .header-top { display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .header-label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; }
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px; font-weight: 800;
+    background: linear-gradient(90deg, var(--text), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .header-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .header-badge {
+    margin-left: auto;
+    background: #0f2420; border: 1px solid #1a4035;
+    color: var(--accent); font-size: 10px; letter-spacing: 1px;
+    text-transform: uppercase; padding: 6px 14px; border-radius: 20px;
+    align-self: center;
+  }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; padding: 16px 40px 0; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    background: none; border: none; color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 10px 18px 12px; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all .2s;
+    position: relative; bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .main { padding: 28px 40px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 800px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 14px;
+  }
+
+  /* METRIC PILL */
+  .metric-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .metric-pill {
+    flex: 1; min-width: 80px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+    text-align: center;
+  }
+  .metric-pill .mval {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px; font-weight: 700;
+  }
+  .metric-pill .mlabel { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+  .metric-pill.highlight { border-color: var(--accent); background: #0f2420; }
+  .metric-pill.highlight .mval { color: var(--accent); }
+
+  /* CONFUSION MATRIX */
+  .cm-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .cm-row { display: flex; gap: 4px; }
+  .cm-cell {
+    width: 80px; height: 70px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 8px; border: 1px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
+    line-height: 1;
+  }
+  .cm-cell .cm-sub { font-family: 'DM Mono',monospace; font-size: 8px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+  .cm-cell.tp { background: #0f2420; border-color: #1a4035; color: var(--accent); }
+  .cm-cell.tn { background: #0f2420; border-color: #1a4035; color: var(--accent2); }
+  .cm-cell.fp { background: #2a1510; border-color: #3d2010; color: var(--warn); }
+  .cm-cell.fn { background: #2a1010; border-color: #3d1515; color: var(--red); }
+  .cm-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .cm-axis-row { display: flex; gap: 4px; }
+  .cm-axis-cell { width: 80px; text-align: center; font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; padding: 4px 0; }
+  .cm-spacer { width: 80px; }
+
+  /* SLIDER */
+  .slider-wrap { margin: 12px 0; }
+  .slider-label { font-size: 11px; color: var(--muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .slider-label span { color: var(--accent); font-size: 14px; font-family: 'Syne',sans-serif; font-weight: 700; }
+  input[type=range] {
+    width: 100%; -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 2px; background: var(--border);
+    outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+    box-shadow: 0 0 8px rgba(48,232,176,.4);
+  }
+
+  /* SECTION TITLE */
+  .stitle {
+    font-family: 'Syne', sans-serif; font-size: 11px;
+    letter-spacing: 3px; text-transform: uppercase; color: var(--muted);
+    margin: 24px 0 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .stitle::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* MODEL INPUT */
+  .input-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .input-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  input[type=number], select, textarea {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    padding: 10px 12px; transition: border-color .2s; width: 100%;
+  }
+  input[type=number]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  select option { background: var(--surface2); }
+
+  /* BTN */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #0b1e1c; border: none; border-radius: 8px;
+    padding: 11px 22px; font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer; font-weight: 500; transition: opacity .2s; margin-top: 4px;
+  }
+  .btn-primary:hover { opacity: .85; }
+  .btn-ghost {
+    background: none; border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 10px 18px;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all .2s;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* DELTA INDICATOR */
+  .delta { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+  .delta.up { background: #0f2420; color: var(--accent); }
+  .delta.down { background: #2a1010; color: var(--red); }
+  .delta.neutral { background: var(--surface2); color: var(--muted); }
+
+  /* RECOMMENDATION BOX */
+  .rec-box {
+    background: #0f2420; border: 1px solid #1a4035;
+    border-radius: var(--radius); padding: 20px;
+  }
+  .rec-box p { font-size: 12px; line-height: 1.8; color: var(--text); }
+  .rec-box strong { color: var(--accent); }
+  textarea.rec-text {
+    width: 100%; min-height: 120px; resize: vertical; margin-top: 10px;
+    background: #0b1e1c; border: 1px solid #1a4035;
+  }
+
+  /* COST DIAL */
+  .cost-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cost-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px;
+  }
+  .cost-card-title { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .cost-card-desc { font-size: 11px; color: var(--text); line-height: 1.6; margin-bottom: 10px; }
+  .cost-val { font-family: 'Syne',sans-serif; font-size: 22px; font-weight: 700; }
+  .cost-card.fp .cost-val { color: var(--warn); }
+  .cost-card.fn .cost-val { color: var(--red); }
+
+  /* SCENARIO SAVED */
+  .scenario-saved {
+    display: none;
+    background: #0f2420; border: 1px solid var(--accent);
+    border-radius: var(--radius); padding: 16px 20px; margin-top: 16px;
+  }
+  .scenario-saved.show { display: block; }
+  .scenario-saved h4 { color: var(--accent); font-family: 'Syne',sans-serif; font-size: 13px; margin-bottom: 10px; }
+  .scenario-saved p { font-size: 11px; color: var(--text); line-height: 1.7; }
+
+  /* COMPARISON TABLE */
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .cmp-table th {
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 10px 14px; text-align: left; font-size: 10px;
+    letter-spacing: 1px; text-transform: uppercase; color: var(--muted);
+  }
+  .cmp-table td { border: 1px solid var(--border); padding: 10px 14px; }
+  .cmp-table tr:hover td { background: var(--surface2); }
+  .cmp-table .winner { color: var(--accent); font-weight: 600; }
+  .cmp-table .loser { color: var(--muted); }
+
+  /* INFO TOOLTIP */
+  .info { font-size: 9px; color: var(--muted); letter-spacing: .5px; margin-top: 4px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-label">Proyecto Final Individual</div>
+      <h1>Model Decision Lab</h1>
+      <div class="header-sub">Métricas · Umbrales · Recomendación de negocio</div>
+    </div>
+    <div class="header-badge">Sesión 3–4</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('input')">① Introducir resultados</button>
+  <button class="tab-btn" onclick="switchTab('compare')">② Comparar modelos</button>
+  <button class="tab-btn" onclick="switchTab('threshold')">③ Analizar umbral</button>
+  <button class="tab-btn" onclick="switchTab('decision')">④ Decisión final</button>
+</div>
+
+<div class="main">
+
+  <!-- TAB 1: INPUT -->
+  <div class="tab-panel active" id="tab-input">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.7;">
+      Introduce aquí las métricas de tus dos modelos. Puedes copiarlas directamente de la tabla de resultados de tu notebook.
+    </p>
+    <div class="grid-2">
+      <!-- MODELO A -->
+      <div class="card">
+        <div class="card-title">Modelo A · Baseline</div>
+        <div class="input-row"><div class="input-label">Nombre del modelo</div>
+          <input type="text" id="m1_name" value="Regresión Logística" placeholder="Ej: Regresión Logística">
+        </div>
+        <div class="grid-2" style="gap:8px;">
+          <div class="input-row"><div class="input-label">Accuracy</div><input type="number" id="m1_acc" step="0.001" min="0" max="1" placeholder="0.000"></div>
+          <div class="input-row"><div class="input-label">Precision</div><input type="number" id="m1_prec" step="0.001" min="0" max="1" placeholder="0.000"></div>
+          <div class="input-row"><div class="input-label">Recall</div><input type="number" id="m1_rec" step="0.001" min="0" max="1" placeholder="0.000"></div>
+          <div class="input-row"><div class="input-label">F1 Score</div><input type="number" id="m1_f1" step="0.001" min="0" max="1" placeholder="0.000"></div>
+          <div class="input-row"><div class="input-label">ROC-AUC</div><input type="number" id="m1_auc" step="0.001" min="0" max="1" placeholder="0.000"></div>
+        </div>
+        <div class="stitle" style="margin-top:16px;">Matriz de confusión</div>
+        <div class="grid-2" style="gap:8px;">
+          <div class="input-row"><div class="input-label">Verdaderos Positivos (TP)</div><input type="number" id="m1_tp" placeholder="0"></div>
+          <div class="input-row"><div class="input-label">Verdaderos Negativos (TN)</div><input type="number" id="m1_tn" placeholder="0"></div>
+          <div class="input-row"><div class="input-label">Falsos Positivos (FP)</div><input type="number" id="m1_fp" placeholder="0"></div>
+          <div class="input-row"><div class="input-label">Falsos Negativos (FN)</div><input type="number" id="m1_fn" placeholder="0"></div>
+        </div>
+      </div>
+
+      <!-- MODELO B -->
+      <div class="card">
+        <div class="card-title">Modelo B · Mejorado</div>
+        <div class="input-row"><div class="input-label">Nombre del modelo</div>
+          <input type="text" id="m2_name" value="Random Forest" placeholder="Ej: Random Forest">
+        </div>
+        <div class="grid-2" style="gap:8px;">
+          <div class="input-row"><div class="input-label">Accuracy</div><input type="number" id="m2_acc" step="0.001" min="0" max="1" placeholder="0.000"></div>
+          <div class="input-row"><div class="input-label">Precision</div><input type="number" id="m2_prec" step="0.001" min="0" max="1" placeholder="0.000"></div>
+          <div class="input-row"><div class="input-label">Recall</div><input type="number" id="m2_rec" step="0.001" min="0" max="1" placeholder="0.000"></div>
+          <div class="input-row"><div class="input-label">F1 Score</div><input type="number" id="m2_f1" step="0.001" min="0" max="1" placeholder="0.000"></div>
+          <div class="input-row"><div class="input-label">ROC-AUC</div><input type="number" id="m2_auc" step="0.001" min="0" max="1" placeholder="0.000"></div>
+        </div>
+        <div class="stitle" style="margin-top:16px;">Matriz de confusión</div>
+        <div class="grid-2" style="gap:8px;">
+          <div class="input-row"><div class="input-label">Verdaderos Positivos (TP)</div><input type="number" id="m2_tp" placeholder="0"></div>
+          <div class="input-row"><div class="input-label">Verdaderos Negativos (TN)</div><input type="number" id="m2_tn" placeholder="0"></div>
+          <div class="input-row"><div class="input-label">Falsos Positivos (FP)</div><input type="number" id="m2_fp" placeholder="0"></div>
+          <div class="input-row"><div class="input-label">Falsos Negativos (FN)</div><input type="number" id="m2_fn" placeholder="0"></div>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- JSON FILE UPLOAD -->
+    <div style="margin-top:24px; padding:16px; background:var(--surface2); border:1px dashed var(--border); border-radius:var(--radius); display:flex; flex-direction:column; gap:8px;">
+      <div class="input-label" style="color:var(--accent);">Cargar datos desde archivo externo</div>
+      <p style="font-size:11px; color:var(--muted);">Sube el archivo <code>model_decision_lab_export.json</code> generado por tu notebook para autocompletar todas las métricas.</p>
+      <input type="file" id="json_file_input" accept=".json" onchange="loadJSONFile(event)" style="background:var(--surface); border:1px solid var(--border); padding:8px; border-radius:8px; font-size:11px; color:var(--text); font-family:'DM Mono', monospace;">
+    </div>
+    <br>
+<!-- DEMO DATA -->
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="loadDemo()">Cargar datos de ejemplo</button>
+      <button class="btn-ghost" onclick="clearAll()">Limpiar</button>
+      <button class="btn-ghost" onclick="switchTab('compare')">Continuar → Comparar modelos</button>
+    </div>
+    <p class="info" style="margin-top:10px;">Los datos de ejemplo están basados en resultados típicos de un proyecto de clasificación binaria desbalanceada 75/25.</p>
+  </div>
+
+  <!-- TAB 2: COMPARE -->
+  <div class="tab-panel" id="tab-compare">
+    <div class="stitle">Tabla comparativa de métricas</div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="cmp-table" id="cmpTable">
+        <thead><tr>
+          <th>Métrica</th><th id="th_m1">Modelo A</th><th id="th_m2">Modelo B</th><th>Diferencia</th><th>Mejor para</th>
+        </tr></thead>
+        <tbody id="cmpBody"></tbody>
+      </table>
+    </div>
+
+    <div class="stitle">Matrices de confusión</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" id="cm1_title">Modelo A</div>
+        <div id="cm1_wrap" class="cm-wrap"></div>
+        <div id="cm1_interp" style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.7;"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" id="cm2_title">Modelo B</div>
+        <div id="cm2_wrap" class="cm-wrap"></div>
+        <div id="cm2_interp" style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.7;"></div>
+      </div>
+    </div>
+
+    <div class="stitle">Interpretación rápida</div>
+    <div class="rec-box" id="quickInterp">
+      <p>Introduce los datos en el paso anterior para ver la interpretación automática.</p>
+    </div>
+
+    <div style="margin-top:16px;">
+      <button class="btn-ghost" onclick="switchTab('threshold')">Continuar → Analizar umbral</button>
+    </div>
+  </div>
+
+  <!-- TAB 3: THRESHOLD -->
+  <div class="tab-panel" id="tab-threshold">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">
+      Mueve el umbral de decisión y observa cómo cambian las métricas. El umbral por defecto es 0.50, pero puede ajustarse según el coste de cada tipo de error.
+    </p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Seleccionar modelo</div>
+        <select id="threshModel" onchange="updateThreshold()">
+          <option value="1">Modelo A (Baseline)</option>
+          <option value="2" selected>Modelo B (Mejorado)</option>
+        </select>
+        <div style="margin-top:16px;">
+          <div class="slider-wrap">
+            <div class="slider-label">Umbral de decisión <span id="threshVal">0.50</span></div>
+            <input type="range" id="threshSlider" min="0.1" max="0.9" step="0.01" value="0.5" oninput="updateThreshold()">
+          </div>
+          <div class="info">Umbral bajo → más publicaciones clasificadas como "alto" (más recall, menos precision). Umbral alto → más selectivo (más precision, menos recall).</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Costes de error</div>
+        <div class="cost-row">
+          <div class="cost-card fp">
+            <div class="cost-card-title">Falso Positivo</div>
+            <div class="cost-card-desc">Impulsar una publicación mediocre.<br>Coste: presupuesto malgastado.</div>
+            <input type="range" min="1" max="10" value="5" step="1" id="costFP" oninput="updateCostDisplay()" style="margin-top:6px;">
+            <div class="cost-val" id="costFPval">5</div>
+          </div>
+          <div class="cost-card fn">
+            <div class="cost-card-title">Falso Negativo</div>
+            <div class="cost-card-desc">Dejar escapar una publicación prometedora.<br>Coste: oportunidad perdida.</div>
+            <input type="range" min="1" max="10" value="5" step="1" id="costFN" oninput="updateCostDisplay()" style="margin-top:6px;">
+            <div class="cost-val" id="costFNval">5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stitle">Métricas con umbral ajustado</div>
+    <div id="threshMetrics"></div>
+
+    <div class="stitle">Visualización precision / recall</div>
+    <div class="card">
+      <canvas id="prCanvas" width="600" height="160" style="width:100%;height:auto;"></canvas>
+    </div>
+
+    <div style="margin-top:16px;">
+      <button class="btn-ghost" onclick="switchTab('decision')">Continuar → Decisión final</button>
+    </div>
+  </div>
+
+  <!-- TAB 4: DECISION -->
+  <div class="tab-panel" id="tab-decision">
+    <div class="stitle">Escenario elegido</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Configuración final</div>
+        <div class="input-row"><div class="input-label">Modelo recomendado</div>
+          <select id="finalModel">
+            <option value="">— Selecciona —</option>
+            <option value="A">Modelo A · Baseline (Regresión Logística)</option>
+            <option value="B">Modelo B · Mejorado (Random Forest)</option>
+          </select>
+        </div>
+        <div class="input-row" style="margin-top:10px;"><div class="input-label">Umbral elegido</div>
+          <input type="number" id="finalThresh" step="0.01" min="0.1" max="0.9" placeholder="0.50">
+        </div>
+        <div class="input-row" style="margin-top:10px;"><div class="input-label">Métrica principal de evaluación</div>
+          <select id="finalMetric">
+            <option value="">— Selecciona —</option>
+            <option value="F1">F1 Score (balance precision/recall)</option>
+            <option value="Precision">Precision (evitar FP · presupuesto limitado)</option>
+            <option value="Recall">Recall (no perder oportunidades)</option>
+            <option value="ROC-AUC">ROC-AUC (discriminación general)</option>
+          </select>
+        </div>
+        <div class="input-row" style="margin-top:10px;"><div class="input-label">Error más costoso en este proyecto</div>
+          <select id="finalError">
+            <option value="">— Selecciona —</option>
+            <option value="FP">Falso Positivo (impulsar contenido mediocre)</option>
+            <option value="FN">Falso Negativo (perder publicación prometedora)</option>
+            <option value="equal">Ambos tienen coste similar</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Resumen del escenario</div>
+        <div id="scenarioSummary" style="font-size:12px;color:var(--muted);line-height:1.8;">
+          Selecciona las opciones del panel izquierdo para ver el resumen.
+        </div>
+      </div>
+    </div>
+
+    <div class="stitle">Justificación de la recomendación</div>
+    <div class="rec-box">
+      <p style="margin-bottom:8px;"><strong>Redacta aquí la justificación</strong> que usarás en tu memoria y en la diapositiva final:</p>
+      <textarea class="rec-text" id="recText" placeholder="Ejemplo: Se recomienda el modelo Random Forest con un umbral de 0.45 porque... El error más costoso en este proyecto es el falso negativo, ya que..."></textarea>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="saveScenario()">Guardar escenario</button>
+        <button class="btn-ghost" onclick="generateDraft()">Generar borrador automático</button>
+      </div>
+    </div>
+
+    <div class="scenario-saved" id="savedBox">
+      <h4>✓ Escenario guardado</h4>
+      <p id="savedContent"></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+
+function loadJSONFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.y_true || !data.model_1 || !data.model_2) {
+        alert("El archivo JSON no tiene el formato esperado del Model Decision Lab.");
+        return;
+      }
+      
+      // We extract y_true and the probs
+      const y_true = data.y_true;
+      
+      // Calculate metrics for a model given y_true, y_prob, and threshold = 0.5
+      function calcModelMetrics(modelData) {
+        const y_prob = modelData.y_prob;
+        let tp = 0, tn = 0, fp = 0, fn = 0;
+        for (let i = 0; i < y_true.length; i++) {
+          const pred = y_prob[i] >= 0.5 ? 1 : 0;
+          if (y_true[i] === 1 && pred === 1) tp++;
+          else if (y_true[i] === 0 && pred === 0) tn++;
+          else if (y_true[i] === 0 && pred === 1) fp++;
+          else if (y_true[i] === 1 && pred === 0) fn++;
+        }
+        const total = tp + tn + fp + fn;
+        const acc = (tp + tn) / total || 0;
+        const prec = tp / (tp + fp) || 0;
+        const rec = tp / (tp + fn) || 0;
+        const f1 = 2 * (prec * rec) / (prec + rec) || 0;
+        
+        // simple AUC calculation (trapezoidal / Wilcoxon Mann Whitney)
+        let pos = [], neg = [];
+        for (let i = 0; i < y_true.length; i++) {
+          if (y_true[i] === 1) pos.push(y_prob[i]);
+          else neg.push(y_prob[i]);
+        }
+        let matches = 0;
+        for (let i = 0; i < pos.length; i++) {
+          for (let j = 0; j < neg.length; j++) {
+            if (pos[i] > neg[j]) matches += 1;
+            else if (pos[i] === neg[j]) matches += 0.5;
+          }
+        }
+        const auc = matches / (pos.length * neg.length) || 0;
+        
+        return { name: modelData.name, acc, prec, rec, f1, auc, tp, tn, fp, fn };
+      }
+      
+      const m1_res = calcModelMetrics(data.model_1);
+      const m2_res = calcModelMetrics(data.model_2);
+      
+      // Fill the fields
+      document.getElementById('m1_name').value = m1_res.name;
+      document.getElementById('m1_acc').value = m1_res.acc.toFixed(3);
+      document.getElementById('m1_prec').value = m1_res.prec.toFixed(3);
+      document.getElementById('m1_rec').value = m1_res.rec.toFixed(3);
+      document.getElementById('m1_f1').value = m1_res.f1.toFixed(3);
+      document.getElementById('m1_auc').value = m1_res.auc.toFixed(3);
+      document.getElementById('m1_tp').value = m1_res.tp;
+      document.getElementById('m1_tn').value = m1_res.tn;
+      document.getElementById('m1_fp').value = m1_res.fp;
+      document.getElementById('m1_fn').value = m1_res.fn;
+      
+      document.getElementById('m2_name').value = m2_res.name;
+      document.getElementById('m2_acc').value = m2_res.acc.toFixed(3);
+      document.getElementById('m2_prec').value = m2_res.prec.toFixed(3);
+      document.getElementById('m2_rec').value = m2_res.rec.toFixed(3);
+      document.getElementById('m2_f1').value = m2_res.f1.toFixed(3);
+      document.getElementById('m2_auc').value = m2_res.auc.toFixed(3);
+      document.getElementById('m2_tp').value = m2_res.tp;
+      document.getElementById('m2_tn').value = m2_res.tn;
+      document.getElementById('m2_fp').value = m2_res.fp;
+      document.getElementById('m2_fn').value = m2_res.fn;
+      
+      // Update internal state immediately
+      readInputs();
+      alert("¡Archivo JSON cargado con éxito! Las métricas se han autocompletado.");
+    } catch (e) {
+      alert("Error al procesar el archivo JSON: " + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// STATE
+let M = {
+  m1: { name:'Regresión Logística', acc:0, prec:0, rec:0, f1:0, auc:0, tp:0, tn:0, fp:0, fn:0 },
+  m2: { name:'Random Forest', acc:0, prec:0, rec:0, f1:0, auc:0, tp:0, tn:0, fp:0, fn:0 }
+};
+let savedScenario = null;
+try { savedScenario = JSON.parse(localStorage.getItem('mdl_scenario') || 'null'); } catch(e){}
+
+function readInputs() {
+  ['m1','m2'].forEach(k => {
+    M[k].name = document.getElementById(`${k}_name`).value || M[k].name;
+    M[k].acc  = parseFloat(document.getElementById(`${k}_acc`).value)||0;
+    M[k].prec = parseFloat(document.getElementById(`${k}_prec`).value)||0;
+    M[k].rec  = parseFloat(document.getElementById(`${k}_rec`).value)||0;
+    M[k].f1   = parseFloat(document.getElementById(`${k}_f1`).value)||0;
+    M[k].auc  = parseFloat(document.getElementById(`${k}_auc`).value)||0;
+    M[k].tp   = parseInt(document.getElementById(`${k}_tp`).value)||0;
+    M[k].tn   = parseInt(document.getElementById(`${k}_tn`).value)||0;
+    M[k].fp   = parseInt(document.getElementById(`${k}_fp`).value)||0;
+    M[k].fn   = parseInt(document.getElementById(`${k}_fn`).value)||0;
+  });
+}
+
+function loadDemo() {
+  const d = {
+    m1: { name:'Regresión Logística', acc:0.762, prec:0.541, rec:0.488, f1:0.513, auc:0.681, tp:110, tn:282, fp:93, fn:115 },
+    m2: { name:'Random Forest', acc:0.847, prec:0.713, rec:0.671, f1:0.691, auc:0.871, tp:151, tn:316, fp:61, fn:74 }
+  };
+  Object.assign(M, d);
+  ['m1','m2'].forEach(k => {
+    const m = d[k];
+    document.getElementById(`${k}_name`).value = m.name;
+    ['acc','prec','rec','f1','auc'].forEach(p => document.getElementById(`${k}_${p}`).value = m[p].toFixed(3));
+    ['tp','tn','fp','fn'].forEach(p => document.getElementById(`${k}_${p}`).value = m[p]);
+  });
+}
+
+function clearAll() {
+  document.querySelectorAll('input[type=number], input[type=text]').forEach(el => el.value = '');
+}
+
+function fmt(v) { return (v||0).toFixed(3); }
+function pct(v) { return ((v||0)*100).toFixed(1)+'%'; }
+
+function delta(a, b) {
+  const d = (b - a);
+  if (Math.abs(d) < 0.001) return '<span class="delta neutral">≈</span>';
+  return `<span class="delta ${d>0?'up':'down'}">${d>0?'+':''}${(d*100).toFixed(1)}%</span>`;
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    const ids = ['input','compare','threshold','decision'];
+    b.classList.toggle('active', ids[i]===id);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id==='tab-'+id);
+  });
+  if (id==='compare') renderCompare();
+  if (id==='threshold') updateThreshold();
+  if (id==='decision') updateScenarioSummary();
+}
+
+function renderCompare() {
+  readInputs();
+  document.getElementById('th_m1').textContent = M.m1.name;
+  document.getElementById('th_m2').textContent = M.m2.name;
+
+  const metrics = [
+    { key:'acc',  label:'Accuracy',  desc:'Cuántas predicciones totales son correctas' },
+    { key:'prec', label:'Precision', desc:'De las clasificadas como alto, cuántas realmente lo son' },
+    { key:'rec',  label:'Recall',    desc:'De las que realmente son alto, cuántas detecta' },
+    { key:'f1',   label:'F1 Score',  desc:'Media armónica de precision y recall' },
+    { key:'auc',  label:'ROC-AUC',   desc:'Capacidad de discriminación general del modelo' },
+  ];
+  const tbody = document.getElementById('cmpBody');
+  tbody.innerHTML = metrics.map(m => {
+    const v1 = M.m1[m.key], v2 = M.m2[m.key];
+    const w = v1 > v2 ? 'A' : v2 > v1 ? 'B' : '-';
+    return `<tr>
+      <td><strong>${m.label}</strong><br><span style="font-size:9px;color:var(--muted)">${m.desc}</span></td>
+      <td class="${w==='A'?'winner':'loser'}">${pct(v1)} ${w==='A'?'⬆':''}</td>
+      <td class="${w==='B'?'winner':'loser'}">${pct(v2)} ${w==='B'?'⬆':''}</td>
+      <td>${delta(v1,v2)}</td>
+      <td style="font-size:10px;color:var(--muted)">${m.label==='Precision'?'Presupuesto limitado':m.label==='Recall'?'No perder oportunidades':m.label==='F1 Score'?'Balance general':'Evaluación global'}</td>
+    </tr>`;
+  }).join('');
+
+  renderCM('cm1', M.m1);
+  renderCM('cm2', M.m2);
+
+  // Quick interp
+  const better = M.m2.f1 >= M.m1.f1 ? M.m2 : M.m1;
+  const betterLbl = M.m2.f1 >= M.m1.f1 ? 'B (mejorado)' : 'A (baseline)';
+  document.getElementById('quickInterp').innerHTML = `<p>
+    <strong>Comparativa general:</strong> El modelo ${betterLbl} supera al otro en F1 (${pct(better.f1)}) y ROC-AUC (${pct(better.auc)}), 
+    lo que indica mejor capacidad de discriminación. <br><br>
+    <strong>Precision vs. Recall:</strong> Con un umbral de 0.50, el modelo ${M.m2.name} clasifica correctamente el ${pct(M.m2.rec)} de los casos de alto engagement (Recall) 
+    con una precisión del ${pct(M.m2.prec)}. ${M.m2.rec > M.m1.rec ? `Mejora el recall en ${((M.m2.rec-M.m1.rec)*100).toFixed(1)} puntos porcentuales respecto al baseline.` : ''}<br><br>
+    <strong>Para negocio:</strong> Un recall de ${pct(M.m2.rec)} significa que de cada 10 publicaciones con alto engagement real, el modelo identifica aproximadamente ${Math.round(M.m2.rec*10)}. 
+    La precision de ${pct(M.m2.prec)} indica que de cada 10 publicaciones etiquetadas como "alto", ${Math.round(M.m2.prec*10)} realmente lo son.
+  </p>`;
+
+  document.getElementById('cm1_title').textContent = M.m1.name;
+  document.getElementById('cm2_title').textContent = M.m2.name;
+}
+
+function renderCM(id, m) {
+  const wrap = document.getElementById(id+'_wrap');
+  const interp = document.getElementById(id+'_interp');
+  wrap.innerHTML = `
+    <div class="cm-axis-row">
+      <div class="cm-spacer"></div>
+      <div class="cm-axis-cell">Pred: Bajo</div>
+      <div class="cm-axis-cell">Pred: Alto</div>
+    </div>
+    <div class="cm-row">
+      <div style="width:80px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Real: Bajo</div>
+      <div class="cm-cell tn"><span>${m.tn}</span><span class="cm-sub">TN</span></div>
+      <div class="cm-cell fp"><span>${m.fp}</span><span class="cm-sub">FP ⚠</span></div>
+    </div>
+    <div class="cm-row">
+      <div style="width:80px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Real: Alto</div>
+      <div class="cm-cell fn"><span>${m.fn}</span><span class="cm-sub">FN ⚠</span></div>
+      <div class="cm-cell tp"><span>${m.tp}</span><span class="cm-sub">TP</span></div>
+    </div>`;
+
+  interp.innerHTML = `
+    <span style="color:var(--warn)">⚠ ${m.fp} Falsos Positivos</span> — publicaciones mediocres impulsadas por error.<br>
+    <span style="color:var(--red)">⚠ ${m.fn} Falsos Negativos</span> — publicaciones prometedoras que se perdieron.
+  `;
+}
+
+function updateThreshold() {
+  readInputs();
+  const thresh = parseFloat(document.getElementById('threshSlider').value);
+  document.getElementById('threshVal').textContent = thresh.toFixed(2);
+  const mIdx = document.getElementById('threshModel').value;
+  const m = mIdx === '1' ? M.m1 : M.m2;
+  const total = m.tp + m.tn + m.fp + m.fn;
+  if (!total) { document.getElementById('threshMetrics').innerHTML = '<p style="color:var(--muted);font-size:12px;">Introduce los datos en el paso 1.</p>'; return; }
+
+  // Simulate threshold effect on precision/recall using a simple linear model
+  const basePrecision = m.prec;
+  const baseRecall = m.rec;
+  const adjPrec = Math.min(1, basePrecision + (thresh - 0.5) * 0.4);
+  const adjRec  = Math.max(0, baseRecall  - (thresh - 0.5) * 0.5);
+  const adjF1   = adjPrec + adjRec > 0 ? 2 * adjPrec * adjRec / (adjPrec + adjRec) : 0;
+
+  document.getElementById('threshMetrics').innerHTML = `
+    <div class="metric-row">
+      <div class="metric-pill ${thresh===0.5?'highlight':''}">
+        <div class="mval">${thresh.toFixed(2)}</div><div class="mlabel">Umbral</div>
+      </div>
+      <div class="metric-pill highlight">
+        <div class="mval">${pct(adjPrec)}</div><div class="mlabel">Precision</div>
+      </div>
+      <div class="metric-pill highlight">
+        <div class="mval">${pct(adjRec)}</div><div class="mlabel">Recall</div>
+      </div>
+      <div class="metric-pill highlight">
+        <div class="mval">${pct(adjF1)}</div><div class="mlabel">F1</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.8;">
+      Con umbral <strong style="color:var(--text)">${thresh.toFixed(2)}</strong>: 
+      ${thresh < 0.5 ? 'El modelo es más <strong style="color:var(--accent)">sensible</strong> — clasifica más publicaciones como "alto engagement". Aumenta el recall pero puede incluir publicaciones mediocres (más FP).' : 
+        thresh > 0.5 ? 'El modelo es más <strong style="color:var(--warn)">selectivo</strong> — solo clasifica las publicaciones con alta confianza. Aumenta la precision pero puede perder publicaciones prometedoras (más FN).' : 
+        'Umbral estándar (0.50). Balance neutral entre precision y recall.'}
+    </div>
+  `;
+
+  drawPRChart(thresh);
+}
+
+function drawPRChart(currentThresh) {
+  const canvas = document.getElementById('prCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const bg = '#131918';
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const mIdx = document.getElementById('threshModel').value;
+  const m = mIdx === '1' ? M.m1 : M.m2;
+  if (!m.prec) return;
+
+  const pad = { l:50, r:30, t:20, b:40 };
+  const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b;
+
+  // Grid
+  ctx.strokeStyle = '#243030'; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (cH * i / 4);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cW, y); ctx.stroke();
+    ctx.fillStyle = '#5a7570'; ctx.font = '10px DM Mono'; ctx.textAlign = 'right';
+    ctx.fillText((1 - i/4).toFixed(1), pad.l - 6, y + 4);
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#5a7570'; ctx.font = '10px DM Mono'; ctx.textAlign = 'center';
+  ctx.fillText('0.1', pad.l, pad.t + cH + 18);
+  ctx.fillText('0.5', pad.l + cW/2, pad.t + cH + 18);
+  ctx.fillText('0.9', pad.l + cW, pad.t + cH + 18);
+  ctx.save(); ctx.translate(14, pad.t + cH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Valor métrica', 0, 0); ctx.restore();
+
+  // Curves
+  const points = 80;
+  const drawCurve = (color, getY, label) => {
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+    for (let i = 0; i <= points; i++) {
+      const t = 0.1 + (i/points)*0.8;
+      const x = pad.l + (t - 0.1) / 0.8 * cW;
+      const val = getY(t, m);
+      const y = pad.t + cH * (1 - val);
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  };
+
+  drawCurve('#30e8b0', (t,m) => Math.min(1, m.prec + (t-0.5)*0.4), 'Precision');
+  drawCurve('#5ce8f7', (t,m) => Math.max(0, m.rec - (t-0.5)*0.5), 'Recall');
+  drawCurve('#b06bf7', (t,m) => {
+    const p = Math.min(1, m.prec + (t-0.5)*0.4);
+    const r = Math.max(0, m.rec - (t-0.5)*0.5);
+    return p+r>0 ? 2*p*r/(p+r) : 0;
+  }, 'F1');
+
+  // Current threshold line
+  const tx = pad.l + (currentThresh - 0.1) / 0.8 * cW;
+  ctx.strokeStyle = '#f7c94b'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(tx, pad.t); ctx.lineTo(tx, pad.t + cH); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Legend
+  const legend = [['#30e8b0','Precision'],['#5ce8f7','Recall'],['#b06bf7','F1'],['#f7c94b','Umbral actual']];
+  ctx.font = '10px DM Mono'; ctx.textAlign = 'left';
+  legend.forEach(([c,l], i) => {
+    const lx = pad.l + i * 130, ly = H - 6;
+    ctx.fillStyle = c; ctx.fillRect(lx, ly-8, 14, 2);
+    ctx.fillStyle = '#5a7570'; ctx.fillText(l, lx+18, ly-2);
+  });
+}
+
+function updateCostDisplay() {
+  document.getElementById('costFPval').textContent = document.getElementById('costFP').value;
+  document.getElementById('costFNval').textContent = document.getElementById('costFN').value;
+}
+
+function updateScenarioSummary() {
+  const model = document.getElementById('finalModel').value;
+  const thresh = document.getElementById('finalThresh').value;
+  const metric = document.getElementById('finalMetric').value;
+  const error = document.getElementById('finalError').value;
+
+  if (!model || !thresh) {
+    document.getElementById('scenarioSummary').innerHTML = '<span style="color:var(--muted)">Selecciona las opciones del panel izquierdo.</span>';
+    return;
+  }
+  const mName = model==='A' ? M.m1.name : M.m2.name;
+  const mData = model==='A' ? M.m1 : M.m2;
+
+  document.getElementById('scenarioSummary').innerHTML = `
+    <div style="margin-bottom:8px;"><span style="color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;">MODELO</span><br>
+    <strong style="color:var(--accent)">${mName}</strong></div>
+    <div style="margin-bottom:8px;"><span style="color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;">UMBRAL</span><br>
+    <strong style="font-family:'Syne',sans-serif;font-size:18px;">${thresh}</strong></div>
+    <div style="margin-bottom:8px;"><span style="color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;">MÉTRICA PRINCIPAL</span><br>
+    <strong>${metric||'—'}</strong></div>
+    <div><span style="color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;">ERROR MÁS COSTOSO</span><br>
+    <strong>${error==='FP'?'Falso Positivo (presupuesto)':error==='FN'?'Falso Negativo (oportunidad)':error==='equal'?'Ambos similares':'—'}</strong></div>
+  `;
+}
+
+['finalModel','finalThresh','finalMetric','finalError'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', updateScenarioSummary);
+});
+
+function generateDraft() {
+  readInputs();
+  const model = document.getElementById('finalModel').value || 'B';
+  const thresh = document.getElementById('finalThresh').value || '0.50';
+  const metric = document.getElementById('finalMetric').value || 'F1 Score';
+  const error = document.getElementById('finalError').value || 'FN';
+  const mName = model==='A' ? M.m1.name : M.m2.name;
+  const mData = model==='A' ? M.m1 : M.m2;
+
+  const errorDesc = error==='FP'
+    ? 'el error más costoso es el falso positivo: invertir presupuesto en impulsar publicaciones que no tendrán buen rendimiento supone un coste directo para la marca'
+    : error==='FN'
+    ? 'el error más costoso es el falso negativo: dejar escapar una publicación con alto potencial representa una oportunidad de negocio perdida que no se puede recuperar'
+    : 'ambos tipos de error tienen un coste similar, por lo que se prioriza el balance entre precision y recall';
+
+  document.getElementById('recText').value =
+`Se recomienda el modelo ${mName} con un umbral de decisión de ${thresh}.
+
+El modelo seleccionado obtiene un ${metric} de ${mData[metric==='Precision'?'prec':metric==='Recall'?'rec':metric==='ROC-AUC'?'auc':'f1'] ? ((mData[metric==='Precision'?'prec':metric==='Recall'?'rec':metric==='ROC-AUC'?'auc':'f1'])*100).toFixed(1)+'%' : '—'}, superando al baseline en las métricas más relevantes para este problema.
+
+En este proyecto, ${errorDesc}. Por ello, el umbral de ${thresh} se ajusta para ${parseFloat(thresh) < 0.5 ? 'favorecer el recall y reducir los falsos negativos, aceptando una ligera pérdida de precision' : parseFloat(thresh) > 0.5 ? 'favorecer la precision y reducir los falsos positivos, siendo más selectivo en las predicciones' : 'mantener un equilibrio estándar entre precision y recall'}.
+
+Esta decisión está justificada desde la perspectiva de negocio: el modelo será usado para priorizar publicaciones de contenido corto en el contexto de recursos de pauta limitados. Una recomendación más ${parseFloat(thresh) > 0.5 ? 'selectiva' : 'sensible'} se alinea mejor con los objetivos reales del equipo de marketing.
+
+Limitación principal: el dataset es sintético y los resultados deben validarse con datos reales de producción antes de implementar el modelo en un entorno real.`;
+}
+
+function saveScenario() {
+  const model = document.getElementById('finalModel').value;
+  const thresh = document.getElementById('finalThresh').value;
+  const metric = document.getElementById('finalMetric').value;
+  const justif = document.getElementById('recText').value;
+
+  if (!model || !thresh) {
+    alert('Selecciona un modelo y un umbral antes de guardar.');
+    return;
+  }
+  const s = { model, thresh, metric, justif, date: new Date().toLocaleString('es-ES') };
+  try { localStorage.setItem('mdl_scenario', JSON.stringify(s)); } catch(e){}
+
+  document.getElementById('savedContent').innerHTML = `
+    <strong>Modelo:</strong> ${model==='A'?M.m1.name:M.m2.name} &nbsp;|&nbsp; 
+    <strong>Umbral:</strong> ${thresh} &nbsp;|&nbsp; 
+    <strong>Métrica:</strong> ${metric}<br>
+    <strong>Guardado el:</strong> ${s.date}
+  `;
+  document.getElementById('savedBox').classList.add('show');
+}
+
+// Init
+loadDemo();
+updateCostDisplay();
+</script>
+</body>
+</html>
